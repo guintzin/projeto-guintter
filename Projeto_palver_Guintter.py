@@ -4,6 +4,8 @@ import pandas as pd
 from datetime import datetime
 from bs4 import BeautifulSoup
 
+qntd_noticias = 10
+
 sitemap_g1 = "https://g1.globo.com/rss/g1/educacao/"
 cookies = {
     'cookie-banner-consent-accepted': 'false',
@@ -43,7 +45,7 @@ title_g1 = []
 subtitle_g1 = []
 date_iso_g1 =[]
 
-for item in all_items_g1 [:10]:
+for item in all_items_g1 [:qntd_noticias]:
 
     link_tag = item.find('link')
     if link_tag:
@@ -114,14 +116,14 @@ title_uol = []
 subtitle_uol = []
 date_iso_uol =[]
 
-for item in all_items_uol[:10]:
+for item in all_items_uol[:qntd_noticias]:
     link_tag = item.find('loc')
     if link_tag:
         links_uol.append(link_tag.text)
     else:
         links_uol.append(None)
         
-for link in links_uol[:10]:
+for link in links_uol[:qntd_noticias]:
     resp_inside_uol = requests.get(link, headers=headers, cookies=cookies)  
     soup = BeautifulSoup(resp_inside_uol.content, "html.parser")
 
@@ -212,14 +214,14 @@ title_r7 = []
 subtitle_r7 = []
 date_iso_r7 =[]
 
-for item in all_items_r7[:10]:
+for item in all_items_r7[:qntd_noticias]:
     link_tag = item.find('loc')
     if link_tag:
         links_r7.append(link_tag.text)
     else:
         links_r7.append(None)
 
-for link in links_r7[:10]:
+for link in links_r7[:qntd_noticias]:
     resp_inside_r7 = requests.get(link, headers=headers, cookies=cookies) 
     soup = BeautifulSoup(resp_inside_r7.content, "html.parser")
 
