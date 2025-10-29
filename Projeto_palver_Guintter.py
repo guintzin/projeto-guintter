@@ -63,7 +63,7 @@ for item in all_items_g1 [:qntd_noticias]:
     if subtitle_tag:
         subtitle_g1.append(subtitle_tag.text)
     else:
-        subtitle_g1.append(None)
+        subtitle_g1.append(title_tag.text)
 
     data_tag = item.find('pubDate')
     if data_tag:
@@ -137,7 +137,6 @@ for link in links_uol[:qntd_noticias]:
                      title_uol.append(title_tag.text.strip())
                 else:
                     title_uol.append(None)
-
 
             subtitle_tag = soup.find("td", class_="manchete-texto")
             if subtitle_tag:
