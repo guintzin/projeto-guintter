@@ -126,26 +126,51 @@ for item in all_items_uol[:qntd_noticias]:
 for link in links_uol[:qntd_noticias]:
     resp_inside_uol = requests.get(link, headers=headers, cookies=cookies)  
     soup = BeautifulSoup(resp_inside_uol.content, "html.parser")
+    
+    if "newsletters" in link:
+            title_tag = soup.find("td", class_ ="title")
+            if title_tag:
+                title_uol.append(title_tag.text.strip())
+            else:
+                title_tag = soup.find("h1", class_ ="headline")
+                if title_tag:
+                     title_uol.append(title_tag.text.strip())
+                else:
+                    title_uol.append(None)
 
-    title_tag = soup.find("h1")
-    if title_tag:
-        title_uol.append(title_tag.text.strip())
+
+            subtitle_tag = soup.find("td", class_="manchete-texto")
+            if subtitle_tag:
+                subtitle_tag = subtitle_tag.find_all("p")[0]
+                subtitle_uol.append(subtitle_tag.text.strip())
+            else:
+                subtitle_uol.append(None)
+
+            date_tag = soup.find("time", class_="date") 
+            if date_tag and date_tag.has_attr("datetime"):
+                date_iso_uol.append(date_tag["datetime"])
+            else:
+                date_iso_uol.append(None)
+
     else:
-        title_uol.append(None)
+            title_tag = soup.find("h1")
+            if title_tag:
+                title_uol.append(title_tag.text.strip())
+            else:
+                title_uol.append(None)
 
-    subtitle_tag = soup.find("div", class_="jupiter-paragraph-fragment")
-    if subtitle_tag:
-        subtitle_tag = subtitle_tag.find_all("p")[0]
-        subtitle_uol.append(subtitle_tag.text.strip())
-    else:
-     subtitle_uol.append(None)
+            subtitle_tag = soup.find("div", class_="jupiter-paragraph-fragment")
+            if subtitle_tag:
+                subtitle_tag = subtitle_tag.find_all("p")[0]
+                subtitle_uol.append(subtitle_tag.text.strip())
+            else:
+                subtitle_uol.append(None)
 
-
-    date_tag = soup.find("time", class_="date") 
-    if date_tag and date_tag.has_attr("datetime"):
-        date_iso_uol.append(date_tag["datetime"])
-    else:
-        date_iso_uol.append(None)
+            date_tag = soup.find("time", class_="date") 
+            if date_tag and date_tag.has_attr("datetime"):
+                date_iso_uol.append(date_tag["datetime"])
+            else:
+                date_iso_uol.append(None)
 
 data_uol={
     "Veiculo" : ["Uol"] * len(links_uol ),
