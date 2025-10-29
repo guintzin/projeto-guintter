@@ -4,7 +4,7 @@ import pandas as pd
 from datetime import datetime
 from bs4 import BeautifulSoup
 
-qntd_noticias = 10
+qntd_noticias = 70
 
 sitemap_g1 = "https://g1.globo.com/rss/g1/educacao/"
 cookies = {
@@ -159,10 +159,9 @@ for link in links_uol[:qntd_noticias]:
             else:
                 title_uol.append(None)
 
-            subtitle_tag = soup.find("div", class_="jupiter-paragraph-fragment")
+            subtitle_tag = soup.find("meta", property="og:description")
             if subtitle_tag:
-                subtitle_tag = subtitle_tag.find_all("p")[0]
-                subtitle_uol.append(subtitle_tag.text.strip())
+                subtitle_uol.append(subtitle_tag["content"].strip())
             else:
                 subtitle_uol.append(None)
 
