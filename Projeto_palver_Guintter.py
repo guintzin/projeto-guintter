@@ -4,7 +4,7 @@ import pandas as pd
 from datetime import datetime
 from bs4 import BeautifulSoup
 
-qntd_noticias = 70
+qntd_noticias = 10
 
 sitemap_g1 = "https://g1.globo.com/rss/g1/educacao/"
 cookies = {
