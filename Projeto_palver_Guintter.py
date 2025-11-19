@@ -25,6 +25,7 @@ sitemap_g1 = "https://g1.globo.com/rss/g1/educacao/"
 sitemap_uol = "https://noticias.uol.com.br/sitemap/v2/today.xml"
 sitemap_r7 = "https://www.r7.com/arc/outboundfeeds/sitemap/latest/"
 
+
 async def get_sitemap(session, url):
     async with session.get(url, headers=headers) as response_sitemap:
         if response_sitemap.status != 200:
@@ -83,40 +84,41 @@ def get_links_uol_r7(all_itens):
     return links
 
 
-async def parse_single_uol(session, link):
-    resp_text = await fetch_html(session, link)
-    soup = BeautifulSoup(resp_text, "lxml")
+async def parse_single_uol(session, link, semaphore):
+    async with semaphore:
+        resp_text = await fetch_html(session, link)
+        soup = BeautifulSoup(resp_text, "lxml")
 
-    if "newsletters" in link:
-        title_tag = soup.find("td", class_="title") or soup.find("h1", class_="headline")
+        if "newsletters" in link:
+            title_tag = soup.find("td", class_="title") or soup.find("h1", class_="headline")
+            title = title_tag.text.strip() if title_tag else None
+
+            subtitle_tag = soup.find("td", class_="manchete-texto")
+            if subtitle_tag:
+                p = subtitle_tag.find_all("p")
+                subtitle = p[0].text.strip() if p else None
+            else:
+                subtitle = None
+
+            date_tag = soup.find("time", class_="date")
+            date_iso = date_tag["datetime"] if (date_tag and date_tag.has_attr("datetime")) else None
+
+            return title, subtitle, date_iso
+
+        title_tag = soup.find("h1")
         title = title_tag.text.strip() if title_tag else None
 
-        subtitle_tag = soup.find("td", class_="manchete-texto")
-        if subtitle_tag:
-            p = subtitle_tag.find_all("p")
-            subtitle = p[0].text.strip() if p else None
-        else:
-            subtitle = None
+        subtitle_tag = soup.find("meta", property="og:description")
+        subtitle = subtitle_tag["content"].strip() if subtitle_tag else None
 
         date_tag = soup.find("time", class_="date")
         date_iso = date_tag["datetime"] if (date_tag and date_tag.has_attr("datetime")) else None
 
         return title, subtitle, date_iso
 
-    title_tag = soup.find("h1")
-    title = title_tag.text.strip() if title_tag else None
 
-    subtitle_tag = soup.find("meta", property="og:description")
-    subtitle = subtitle_tag["content"].strip() if subtitle_tag else None
-
-    date_tag = soup.find("time", class_="date")
-    date_iso = date_tag["datetime"] if (date_tag and date_tag.has_attr("datetime")) else None
-
-    return title, subtitle, date_iso
-
-
-async def get_dados_uol(session, links):
-    tasks = [parse_single_uol(session, link) for link in links]
+async def get_dados_uol(session, links, semaphore):
+    tasks = [parse_single_uol(session, link, semaphore) for link in links]
     results = await asyncio.gather(*tasks)
 
     title_uol = []
@@ -137,24 +139,25 @@ async def get_dados_uol(session, links):
     }
 
 
-async def parse_single_r7(session, link):
-    resp_text = await fetch_html(session, link)
-    soup = BeautifulSoup(resp_text, "lxml")
+async def parse_single_r7(session, link, semaphore):
+    async with semaphore:
+        resp_text = await fetch_html(session, link)
+        soup = BeautifulSoup(resp_text, "lxml")
 
-    title_tag = soup.find("h1")
-    title = title_tag.text.strip() if title_tag else None
+        title_tag = soup.find("h1")
+        title = title_tag.text.strip() if title_tag else None
 
-    subtitle_tag = soup.find("h2")
-    subtitle = subtitle_tag.text.strip() if subtitle_tag else None
+        subtitle_tag = soup.find("h2")
+        subtitle = subtitle_tag.text.strip() if subtitle_tag else None
 
-    date_tag = soup.find("time")
-    date_iso = date_tag["datetime"] if (date_tag and date_tag.has_attr("datetime")) else None
+        date_tag = soup.find("time")
+        date_iso = date_tag["datetime"] if (date_tag and date_tag.has_attr("datetime")) else None
 
-    return title, subtitle, date_iso
+        return title, subtitle, date_iso
 
 
-async def get_dados_r7(session, links):
-    tasks = [parse_single_r7(session, link) for link in links]
+async def get_dados_r7(session, links, semaphore):
+    tasks = [parse_single_r7(session, link, semaphore) for link in links]
     results = await asyncio.gather(*tasks)
 
     title_r7 = []
@@ -187,7 +190,8 @@ def export_csv(d_g1, d_uol, d_r7):
 
 async def main():
     async with aiohttp.ClientSession() as session:
-        
+        semaphore = asyncio.Semaphore(20)  
+
         # G1
         soup_g1 = await get_sitemap(session, sitemap_g1)
         all_itens_g1 = soup_g1.find_all('item')
@@ -197,15 +201,16 @@ async def main():
         soup_uol = await get_sitemap(session, sitemap_uol)
         all_itens_uol = get_itens_uol_r7(soup_uol)
         links_uol = get_links_uol_r7(all_itens_uol)
-        dados_uol = await get_dados_uol(session, links_uol)
+        dados_uol = await get_dados_uol(session, links_uol, semaphore)
 
         # R7
         soup_r7 = await get_sitemap(session, sitemap_r7)
         all_items_r7 = get_itens_uol_r7(soup_r7)
         links_r7 = get_links_uol_r7(all_items_r7)
-        dados_r7 = await get_dados_r7(session, links_r7)
+        dados_r7 = await get_dados_r7(session, links_r7, semaphore)
 
         export_csv(dados_g1, dados_uol, dados_r7)
+
 
 start_time = datetime.now()
 asyncio.run(main())
